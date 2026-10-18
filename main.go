@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"thirdProgram/database"
 	"thirdProgram/handlers"
+	"thirdProgram/repository"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -18,7 +19,10 @@ func main() {
 	}
 	defer pool.Close()
 
-	h := handlers.New(pool)
+	userRepo := repository.NewPostgresUserRepository(pool)
+	categoryRepo := repository.NewPostgresCategoryRepository(pool)
+
+	h := handlers.New(userRepo, categoryRepo, pool)
 
 	r := chi.NewRouter()
 

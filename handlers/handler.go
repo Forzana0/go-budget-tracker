@@ -1,13 +1,21 @@
 package handlers
 
-import "github.com/jackc/pgx/v5/pgxpool"
+import (
+	"thirdProgram/repository"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+)
 
 type Handler struct {
-	pool *pgxpool.Pool
+	userRepo     repository.UserRepository
+	categoryRepo repository.CategoryRepository
+	pool         *pgxpool.Pool // Залишаємо поки що для категорій та витрат
 }
 
-func New(pool *pgxpool.Pool) *Handler {
+func New(userRepo repository.UserRepository, categoryRepo repository.CategoryRepository, pool *pgxpool.Pool) *Handler {
 	return &Handler{
-		pool: pool,
+		categoryRepo: categoryRepo,
+		userRepo:     userRepo,
+		pool:         pool,
 	}
 }

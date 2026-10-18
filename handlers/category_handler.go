@@ -17,23 +17,10 @@ func (h *Handler) GetCategories(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	rows, err := h.pool.Query(ctx, "SELECT name, id  FROM categories WHERE user_id IS NULL OR user_id = $1", userID)
+	categories, err := h.categoryRepo.GetAll(ctx, userID)
 	if err != nil {
-		http.Error(w, "Error request to DB", http.StatusInternalServerError)
+		http.Error(w, "Error", http.StatusInternalServerError)
 		return
-	}
-
-	defer rows.Close()
-
-	var categories []models.Category
-
-	for rows.Next() {
-		var c models.Category
-		if err := rows.Scan(&c.Name, &c.ID); err != nil {
-			http.Error(w, "Error while reading from DB", http.StatusInternalServerError)
-			return
-		}
-		categories = append(categories, c)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -58,14 +45,14 @@ func (h *Handler) CreateCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.pool.Exec(ctx, "INSERT INTO categories (name, user_id) VALUES($1, $2)", category.Name, userID)
+	created, err := h.categoryRepo.Create(ctx, category, userID)
 	if err != nil {
-		http.Error(w, "Error while adding new category", http.StatusInternalServerError)
+		http.Error(w, "Error while creatin category", http.StatusInternalServerError)
 		return
 	}
-
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-
+	json.NewEncoder(w).Encode(created)
 }
 
 func (h *Handler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
