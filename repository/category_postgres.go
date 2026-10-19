@@ -58,3 +58,32 @@ func (r *PostgresCategoryRepository) Create(ctx context.Context, category *model
 
 	return &created, nil
 }
+
+func (r *PostgresCategoryRepository) Delete(ctx context.Context, userID int, categoryID int) error {
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback(ctx)
+
+	var dummy int
+	err = tx.QueryRow(ctx, "SELECT id FROM categories WHERE id = $1 AND user_id = $2", categoryID, userID).Scan(&dummy)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(ctx, "UPDATE expenses SET category_id = 6 WHERE category_id =$1 AND user_id = $2", categoryID, userID)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(ctx, "DELETE FROM categories WHERE id = $1 AND user_id = $2", categoryID, userID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+
+}
