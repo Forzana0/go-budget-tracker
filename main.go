@@ -21,15 +21,16 @@ func main() {
 
 	userRepo := repository.NewPostgresUserRepository(pool)
 	categoryRepo := repository.NewPostgresCategoryRepository(pool)
+	expenseRepo := repository.NewPostgresExpenseRepository(pool)
 
-	h := handlers.New(userRepo, categoryRepo, pool)
+	h := handlers.New(userRepo, categoryRepo, expenseRepo)
 
 	r := chi.NewRouter()
 
 	//User_Handlers
 	r.Get("/users", h.GetUsers)
 	r.Post("/users", h.CreateUser)
-	r.Delete("/users", h.DeleteUser)
+	r.Delete("/users/{user_id}", h.DeleteUser)
 
 	//Category_handlers
 	r.Get("/users/{user_id}/categories", h.GetCategories)

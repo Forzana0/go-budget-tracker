@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"thirdProgram/models"
+	"thirdProgram/repository"
 )
 
 func (h *Handler) AddExpense(w http.ResponseWriter, r *http.Request) {
@@ -21,44 +23,19 @@ func (h *Handler) AddExpense(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	var currentBalance float64
-	err := h.pool.QueryRow(ctx, "SELECT balance FROM users WHERE id = $1", userID).Scan(&currentBalance)
+	created, err := h.expenseRepo.Create(ctx, expanse, userID)
 	if err != nil {
-		http.Error(w, "User not found", http.StatusNotFound)
+		if errors.Is(err, repository.ErrNotEnoughMoney) {
+			http.Error(w, "Not enough money", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "Error while creating expense", http.StatusInternalServerError)
 		return
 	}
 
-	if expanse.Price > currentBalance {
-		http.Error(w, "Not enough money", http.StatusBadRequest)
-		return
-	}
-
-	tx, err := h.pool.Begin(ctx)
-	if err != nil {
-		http.Error(w, "Error starting transaction for adding expense", http.StatusInternalServerError)
-		return
-	}
-
-	defer tx.Rollback(ctx)
-
-	_, err = tx.Exec(ctx, "UPDATE users SET balance = balance - $1 WHERE id = $2", expanse.Price, userID)
-	if err != nil {
-		http.Error(w, "Error while updating the balance", http.StatusInternalServerError)
-		return
-	}
-
-	_, err = tx.Exec(ctx, "INSERT INTO expenses(name, description, price, user_id, category_id) VALUES($1, $2, $3, $4, $5)", expanse.Name, expanse.Description, expanse.Price, userID, expanse.CategoryID)
-	if err != nil {
-		http.Error(w, "Error while adding new expense", http.StatusInternalServerError)
-		return
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		http.Error(w, "Error commiting transaction", http.StatusInternalServerError)
-		return
-	}
-
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(created)
 }
 
 func (h *Handler) GetExpenses(w http.ResponseWriter, r *http.Request) {
@@ -67,23 +44,12 @@ func (h *Handler) GetExpenses(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var expenses []models.Expense
 	ctx := r.Context()
 
-	rows, err := h.pool.Query(ctx, "SELECT id, name, description, price, created_at, user_id, category_id FROM expenses WHERE user_id = $1", userID)
+	expenses, err := h.expenseRepo.GetAll(ctx, userID)
 	if err != nil {
-		http.Error(w, "Error request to DB", http.StatusInternalServerError)
+		http.Error(w, "Error getting expenses", http.StatusInternalServerError)
 		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var e models.Expense
-		if err := rows.Scan(&e.ID, &e.Name, &e.Description, &e.Price, &e.CreatedAt, &e.UserID, &e.CategoryID); err != nil {
-			http.Error(w, "Error while reading from DB", http.StatusInternalServerError)
-			return
-		}
-		expenses = append(expenses, e)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -108,35 +74,9 @@ func (h *Handler) DeleteExpense(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	var price float64
-	err := h.pool.QueryRow(ctx, "SELECT price FROM expenses WHERE id = $1", expenseID).Scan(&price)
-	if err != nil {
-		http.Error(w, "Expense ID not found", http.StatusNotFound)
-		return
-	}
-
-	tx, err := h.pool.Begin(ctx)
-	if err != nil {
-		http.Error(w, "Error starting transaction for deleting expense", http.StatusInternalServerError)
-		return
-	}
-
-	defer tx.Rollback(ctx)
-
-	_, err = tx.Exec(ctx, "UPDATE users SET balance = balance + $1 WHERE id = $2", price, userID)
-	if err != nil {
-		http.Error(w, "Error while updating the balance", http.StatusInternalServerError)
-		return
-	}
-
-	_, err = tx.Exec(ctx, "DELETE FROM expenses WHERE id = $1 AND user_id = $2", expenseID, userID)
+	err := h.expenseRepo.Delete(ctx, userID, expenseID)
 	if err != nil {
 		http.Error(w, "Error while deleting expense", http.StatusInternalServerError)
-		return
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		http.Error(w, "Error while commitin transaction", http.StatusInternalServerError)
 		return
 	}
 

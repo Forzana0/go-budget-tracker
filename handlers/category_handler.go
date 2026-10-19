@@ -70,7 +70,7 @@ func (h *Handler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	err := h.categoryRepo.Delete(ctx, userID, categoryID)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			http.Error(w, "Category not found or it is a global category you cannot delete", http.StatusForbidden)
+			http.Error(w, "Category not found or it is a category you cannot delete", http.StatusForbidden)
 			return
 		}
 		http.Error(w, "Error while deleting category", http.StatusInternalServerError)

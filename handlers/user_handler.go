@@ -45,19 +45,13 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	user := &models.User{}
 
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+	userID, ok := parseUserID(w, r)
+	if !ok {
 		return
 	}
 
-	if user.ID == 0 {
-		http.Error(w, "UserId can not be 0", http.StatusBadRequest)
-
-	}
-
-	err := h.userRepo.Delete(ctx, user.ID)
+	err := h.userRepo.Delete(ctx, userID)
 	if err != nil {
 		http.Error(w, "Error while deleting user", http.StatusInternalServerError)
 		return
