@@ -31,6 +31,7 @@ func main() {
 	r.Get("/users", h.GetUsers)
 	r.Post("/users", h.CreateUser)
 	r.Delete("/users/{user_id}", h.DeleteUser)
+	r.Put("/users/{user_id}", h.UpdateUser)
 
 	//Category_handlers
 	r.Get("/users/{user_id}/categories", h.GetCategories)

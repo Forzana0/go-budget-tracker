@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"thirdProgram/models"
+	"thirdProgram/repository"
 )
 
 func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -57,5 +59,33 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	var user models.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	userID, ok := parseUserID(w, r)
+	if !ok {
+		return
+	}
+
+	updated, err := h.userRepo.Update(ctx, userID, &user)
+	if err != nil {
+		if errors.Is(err, repository.ErrUserNotFound) {
+			http.Error(w, "User not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Error while updating user", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(updated)
 
 }

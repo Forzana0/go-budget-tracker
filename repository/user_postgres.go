@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"thirdProgram/models"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -61,7 +63,27 @@ func (r *PostgresUserRepository) Create(ctx context.Context, user *models.User) 
 	return &created, nil
 }
 
-func (r *PostgresUserRepository) Delete(ctx context.Context, id int) error {
-	_, err := r.pool.Exec(ctx, "DELETE FROM users WHERE id = $1", id)
+func (r *PostgresUserRepository) Delete(ctx context.Context, userID int) error {
+	_, err := r.pool.Exec(ctx, "DELETE FROM users WHERE id = $1", userID)
 	return err
+}
+
+func (r *PostgresUserRepository) Update(ctx context.Context, userID int, user *models.User) (*models.User, error) {
+	var updated models.User
+
+	err := r.pool.QueryRow(
+		ctx,
+		"UPDATE users SET username = $1, balance = $2 WHERE id =$3 RETURNING id, username, balance",
+		user.Username,
+		user.Balance,
+		userID,
+	).Scan(&updated.ID, &updated.Username, &updated.Balance)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+	return &updated, nil
 }
