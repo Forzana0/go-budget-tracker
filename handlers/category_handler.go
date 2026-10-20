@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"thirdProgram/models"
+	"thirdProgram/repository"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -78,5 +80,40 @@ func (h *Handler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
+	categoryID, ok := parseCategoryID(w, r)
+	if !ok {
+		return
+	}
+
+	userID, ok := parseUserID(w, r)
+	if !ok {
+		return
+	}
+
+	var category models.Category
+	ctx := r.Context()
+
+	err := json.NewDecoder(r.Body).Decode(&category)
+	if err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	updated, err := h.categoryRepo.Update(ctx, userID, categoryID, &category)
+	if err != nil {
+		if errors.Is(err, repository.ErrCategoryNotFound) {
+			http.Error(w, "Category not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Error while updating category", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(updated)
 
 }

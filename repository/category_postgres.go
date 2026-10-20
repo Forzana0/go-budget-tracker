@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"thirdProgram/models"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -85,5 +87,16 @@ func (r *PostgresCategoryRepository) Delete(ctx context.Context, userID int, cat
 	}
 
 	return tx.Commit(ctx)
+}
 
+func (r *PostgresCategoryRepository) Update(ctx context.Context, userID int, categoryID int, category *models.Category) (*models.Category, error) {
+	var updated models.Category
+	err := r.pool.QueryRow(ctx, "UPDATE categories SET name = $1 WHERE id = $2 AND user_id = $3 RETURNING id, name, user_id", category.Name, categoryID, userID).Scan(&updated.ID, &updated.Name, &updated.UserID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrCategoryNotFound
+		}
+		return nil, err
+	}
+	return &updated, nil
 }

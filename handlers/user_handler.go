@@ -10,13 +10,11 @@ import (
 
 func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	// 1. Просто просимо дані в репозиторію
 	users, err := h.userRepo.GetAll(ctx)
 	if err != nil {
 		http.Error(w, "Error request to DB", http.StatusInternalServerError)
 		return
 	}
-	// 2. Віддаємо результат у форматі JSON
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(users); err != nil {
 		http.Error(w, "Error encoding json", http.StatusInternalServerError)
@@ -87,5 +85,4 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(updated)
-
 }

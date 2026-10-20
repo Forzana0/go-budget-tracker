@@ -37,8 +37,9 @@ func main() {
 	r.Get("/users/{user_id}/categories", h.GetCategories)
 	r.Post("/users/{user_id}/categories", h.CreateCategory)
 	r.Delete("/users/{user_id}/categories/{category_id}", h.DeleteCategory)
+	r.Put("/users/{user_id}/categories/{category_id}", h.UpdateCategory)
 
-	//Expense_handler
+	//Expense_handlers
 	r.Post("/users/{user_id}/expenses", h.AddExpense)
 	r.Get("/users/{user_id}/expenses", h.GetExpenses)
 	r.Delete("/users/{user_id}/expenses/{expense_id}", h.DeleteExpense)

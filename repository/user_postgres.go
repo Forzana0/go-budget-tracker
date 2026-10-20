@@ -19,18 +19,15 @@ func NewPostgresUserRepository(pool *pgxpool.Pool) *PostgresUserRepository {
 	}
 }
 
-// GetAll повертає список усіх користувачів з таблиці users.
 func (r *PostgresUserRepository) GetAll(ctx context.Context) ([]models.User, error) {
 	var users []models.User
 
-	// Робимо запит до бази даних через пул підключень r.pool
 	rows, err := r.pool.Query(ctx, "SELECT id, username, balance FROM users ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	// Скануємо кожен рядок у структуру models.User
 	for rows.Next() {
 		var u models.User
 		if err := rows.Scan(&u.ID, &u.Username, &u.Balance); err != nil {
@@ -39,7 +36,6 @@ func (r *PostgresUserRepository) GetAll(ctx context.Context) ([]models.User, err
 		users = append(users, u)
 	}
 
-	// Перевіряємо, чи не виникла помилка під час перебору рядків
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
