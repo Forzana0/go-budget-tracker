@@ -43,6 +43,7 @@ func main() {
 	r.Post("/users/{user_id}/expenses", h.AddExpense)
 	r.Get("/users/{user_id}/expenses", h.GetExpenses)
 	r.Delete("/users/{user_id}/expenses/{expense_id}", h.DeleteExpense)
+	r.Put("/users/{user_id}/expenses/{expense_id}", h.UpdateExpense)
 
 	http.ListenAndServe(":9091", r)
 }

@@ -97,3 +97,52 @@ func (r *PostgresExpenseRepository) Delete(ctx context.Context, userID int, expe
 
 	return tx.Commit(ctx)
 }
+
+/*
+1. Дістати баланс юзера по айді
+*/
+
+func (r *PostgresExpenseRepository) Update(ctx context.Context, userID int, expenseID int, expense *models.Expense) (*models.Expense, error) {
+	var updated models.Expense
+	var oldPrice float64
+	var balance float64
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	defer tx.Rollback(ctx)
+
+	err = tx.QueryRow(ctx, "SELECT price FROM expenses WHERE id = $1 AND user_id = $2", expenseID, userID).Scan(&oldPrice)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.QueryRow(ctx, "SELECT balance FROM users WHERE id = $1", userID).Scan(&balance)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.QueryRow(ctx, "UPDATE expenses SET name = $1, description = $2, price = $3, category_id = $4 WHERE id = $5 AND user_id = $6 RETURNING id, name, description, price, created_at, user_id, category_id", expense.Name, expense.Description, expense.Price, expense.CategoryID, expenseID, userID).Scan(&updated.ID, &updated.Name, &updated.Description, &updated.Price, &updated.CreatedAt, &updated.UserID, &updated.CategoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	priceDiff := oldPrice - updated.Price
+	newBalance := balance + priceDiff
+
+	if newBalance >= 0 {
+		_, err = tx.Exec(ctx, "UPDATE users SET balance = balance + $1 WHERE  id = $2", priceDiff, userID)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, ErrNotEnoughMoney
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return &updated, nil
+}

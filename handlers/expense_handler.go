@@ -82,3 +82,38 @@ func (h *Handler) DeleteExpense(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+func (h *Handler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
+	var expense models.Expense
+	ctx := r.Context()
+
+	userID, ok := parseUserID(w, r)
+	if !ok {
+		return
+	}
+
+	expenseID, ok := parseExpenseID(w, r)
+	if !ok {
+		return
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&expense)
+	if err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	updated, err := h.expenseRepo.Update(ctx, userID, expenseID, &expense)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotEnoughMoney) {
+			http.Error(w, "Not enough money", http.StatusForbidden)
+			return
+		}
+		http.Error(w, "Error while updating expense", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(updated)
+}

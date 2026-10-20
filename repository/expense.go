@@ -12,4 +12,5 @@ type ExpenseRepository interface {
 	GetAll(ctx context.Context, userID int) ([]models.Expense, error)
 	Create(ctx context.Context, expense *models.Expense, userID int) (*models.Expense, error)
 	Delete(ctx context.Context, userID int, expenseID int) error
+	Update(ctx context.Context, userID int, expenseID int, expense *models.Expense) (*models.Expense, error)
 }
