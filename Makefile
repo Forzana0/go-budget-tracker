@@ -44,3 +44,4 @@ migrate-create:
 		exit 1; \
 	fi
 	migrate create -ext sql -dir migrations -seq $(name)
+	

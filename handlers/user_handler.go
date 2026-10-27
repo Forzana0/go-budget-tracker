@@ -22,7 +22,6 @@ func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error encoding json", http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 }
 
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {

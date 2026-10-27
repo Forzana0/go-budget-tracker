@@ -98,10 +98,6 @@ func (r *PostgresExpenseRepository) Delete(ctx context.Context, userID int, expe
 	return tx.Commit(ctx)
 }
 
-/*
-1. Дістати баланс юзера по айді
-*/
-
 func (r *PostgresExpenseRepository) Update(ctx context.Context, userID int, expenseID int, expense *models.Expense) (*models.Expense, error) {
 	var updated models.Expense
 	var oldPrice float64
